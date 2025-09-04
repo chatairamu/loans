@@ -5,8 +5,8 @@
 // Set the proper header for JSON output
 header('Content-Type: application/json');
 
-// Set timezone
-date_default_timezone_set('UTC');
+// Set timezone to India Standard Time
+date_default_timezone_set('Asia/Kolkata');
 
 // Include the database connection
 require_once 'db_connect.php';
@@ -52,7 +52,7 @@ try {
                 JOIN
                     recurring_payments AS rp ON pl.payment_id = rp.id
                 WHERE
-                    pl.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 45 DAY)
+                    pl.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 10 DAY)
                 ORDER BY
                     pl.due_date ASC, rp.payment_name ASC
             ";

@@ -3,8 +3,8 @@
 // This script should be run daily via a cron job (e.g., once after midnight).
 // It populates the payment_log table with upcoming payments for the current month.
 
-// Set timezone to avoid date/time discrepancies
-date_default_timezone_set('UTC');
+// Set timezone to India Standard Time to align with user's locale
+date_default_timezone_set('Asia/Kolkata');
 
 // Include the database connection
 require_once 'db_connect.php';

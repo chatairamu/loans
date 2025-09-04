@@ -2,53 +2,12 @@
 // index.php (PHP Part)
 // This top block handles server-side rendering for critical information.
 
-// Set a default timezone to ensure consistency
-date_default_timezone_set('UTC');
+// Set timezone to India Standard Time
+date_default_timezone_set('Asia/Kolkata');
 
 // Include the database connection script
 require_once 'db_connect.php';
-
-// --- Fetch data for the "Upcoming Payments (Next 10 Days)" section ---
-$upcoming_10_days_payments = [];
-$db_error_message = null;
-
-try {
-    // This query fetches upcoming payments due in the next 10 days that haven't been paid.
-    $query = "
-        SELECT
-            rp.payment_name,
-            rp.amount,
-            pl.due_date
-        FROM
-            payment_log AS pl
-        JOIN
-            recurring_payments AS rp ON pl.payment_id = rp.id
-        WHERE
-            pl.status = 'upcoming'
-            AND pl.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 10 DAY)
-        ORDER BY
-            pl.due_date ASC
-    ";
-    $stmt = $pdo->query($query);
-    $upcoming_10_days_payments = $stmt->fetchAll();
-} catch (PDOException $e) {
-    // If the database connection fails, we'll capture the error to display it.
-    // In a production environment, you would log this error to a file instead of showing it.
-    $db_error_message = "Database Error: Could not fetch upcoming payments. Please check the database connection and ensure the tables exist.";
-    // error_log($e->getMessage()); // Example of logging
-}
-
-// --- Helper Functions for Formatting ---
-function format_currency($amount, $currency = 'USD') {
-    $formatter = new NumberFormatter('en_US', NumberFormatter::CURRENCY);
-    return $formatter->formatCurrency($amount, $currency);
-}
-
-function format_date_friendly($date_string) {
-    $date = new DateTime($date_string);
-    // Formats date to "Mon, Sep 15, 2025"
-    return $date->format('D, M j, Y');
-}
+// No server-side fetching needed anymore, the frontend handles it all.
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,31 +46,9 @@ function format_date_friendly($date_string) {
         </header>
 
         <main>
-            <!-- Section 1: Notifications (Server-Rendered with PHP) -->
-            <section id="notifications" class="mb-10 p-6 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg shadow-sm">
-                <h2 class="text-xl font-bold text-yellow-800 mb-4">Upcoming Payments (Next 10 Days)</h2>
-                <?php if ($db_error_message): ?>
-                    <p class="text-red-600 font-semibold"><?= htmlspecialchars($db_error_message) ?></p>
-                <?php elseif (empty($upcoming_10_days_payments)): ?>
-                    <p class="text-gray-600">🎉 No payments due in the next 10 days. You're all clear!</p>
-                <?php else: ?>
-                    <ul class="space-y-3">
-                        <?php foreach ($upcoming_10_days_payments as $payment): ?>
-                            <li class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                                <span class="font-semibold text-gray-700"><?= htmlspecialchars($payment['payment_name']) ?></span>
-                                <div>
-                                    <span class="font-bold text-gray-800 mr-4"><?= htmlspecialchars(format_currency($payment['amount'])) ?></span>
-                                    <span class="text-sm text-gray-500">Due: <?= htmlspecialchars(format_date_friendly($payment['due_date'])) ?></span>
-                                </div>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
-            </section>
-
-            <!-- Section 2: All Upcoming Payments (To be populated by AJAX) -->
+            <!-- Main interactive payment list -->
             <section id="all-payments">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">All Payments (Next 45 Days)</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Upcoming Payments (Next 10 Days)</h2>
 
                 <!-- Loading Spinner - shown while AJAX call is in progress -->
                 <div id="loading-spinner" class="text-center py-8">
