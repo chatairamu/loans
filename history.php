@@ -133,27 +133,33 @@ require_once 'db_connect.php';
                             <div>
                                 <label for="payment_type" class="block text-sm font-medium text-gray-700">Payment Type</label>
                                 <select name="payment_type" id="payment_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
-                                    <option>Loan</option><option>EMI</option><option>Rent</option><option>Recharge</option><option>Insurance</option><option>Other</option>
+                                    <option>Other</option><option>Loan</option><option>EMI</option><option>Rent</option><option>Recharge</option><option>Insurance</option>
                                 </select>
                             </div>
-                            <div>
-                                <label for="amount" class="block text-sm font-medium text-gray-700">Amount ($)</label>
-                                <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="e.g., 15.99" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="due_day" class="block text-sm font-medium text-gray-700">Due Day (1-31)</label>
                                 <input type="number" name="due_day" id="due_day" min="1" max="31" placeholder="e.g., 15" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                             </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="amount" class="block text-sm font-medium text-gray-700">Monthly Amount (EMI)</label>
+                                <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="e.g., 2125.00" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                            </div>
+                            <div id="principal-amount-wrapper" class="hidden">
+                                <label for="principal_amount" class="block text-sm font-medium text-gray-700">Principal Amount</label>
+                                <input type="number" name="principal_amount" id="principal_amount" step="0.01" min="0.01" placeholder="e.g., 100000.00" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div>
                                 <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
                                 <input type="date" name="start_date" id="start_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                             </div>
-                        </div>
-                        <div>
-                            <label for="end_date" class="block text-sm font-medium text-gray-700">End Date <span class="text-gray-500">(Optional)</span></label>
-                            <input type="date" name="end_date" id="end_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <div>
+                                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date <span class="text-gray-500">(Optional)</span></label>
+                                <input type="date" name="end_date" id="end_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
                         </div>
                     </div>
                     <div class="mt-6 pt-4 border-t">
@@ -239,11 +245,20 @@ require_once 'db_connect.php';
             let content = '';
             history.forEach(item => {
                 const statusClass = item.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                let nameHtml = `<div class="text-sm font-medium text-gray-900">${item.payment_name}</div>
+                                <div class="text-sm text-gray-500">${item.payment_type}</div>`;
+
+                if (item.payment_type === 'Loan' || item.payment_type === 'EMI') {
+                    nameHtml = `<a href="details.php?id=${item.payment_id}" class="hover:underline" title="View Details">
+                                    <div class="text-sm font-medium text-indigo-600 hover:text-indigo-900">${item.payment_name}</div>
+                                    <div class="text-sm text-gray-500">${item.payment_type}</div>
+                                </a>`;
+                }
+
                 content += `
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">${item.payment_name}</div>
-                            <div class="text-sm text-gray-500">${item.payment_type}</div>
+                            ${nameHtml}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(item.amount)}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(item.due_date)}</td>
@@ -306,7 +321,7 @@ require_once 'db_connect.php';
         // --- Initial Load ---
         fetchHistory();
 
-        // --- Modal Handling (copied and adapted from index.php) ---
+        // --- Modal Handling ---
         const modal = document.getElementById('add-payment-modal');
         const addPaymentBtn = document.getElementById('add-payment-btn');
         const closeModalBtn = document.getElementById('close-modal-btn');
@@ -328,6 +343,19 @@ require_once 'db_connect.php';
             if (event.target === modal) closeModal();
         });
 
+        document.getElementById('payment_type').addEventListener('change', function() {
+            const principalWrapper = document.getElementById('principal-amount-wrapper');
+            const principalInput = document.getElementById('principal_amount');
+            if (this.value === 'Loan' || this.value === 'EMI') {
+                principalWrapper.classList.remove('hidden');
+                principalInput.required = true;
+            } else {
+                principalWrapper.classList.add('hidden');
+                principalInput.required = false;
+                principalInput.value = '';
+            }
+        });
+
         addPaymentForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             submitBtn.disabled = true;
@@ -346,7 +374,6 @@ require_once 'db_connect.php';
 
                 if (response.ok && result.status === 'success') {
                     closeModal();
-                    // Refresh the history list on this page
                     fetchHistory();
                 } else {
                     if (result.data && result.data.errors) {

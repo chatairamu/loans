@@ -6,7 +6,8 @@ CREATE TABLE `recurring_payments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `payment_name` varchar(255) NOT NULL,
   `payment_type` enum('Loan','EMI','Rent','Recharge','Insurance','Other') NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
+  `amount` decimal(10,2) NOT NULL COMMENT 'This is the monthly payment (EMI)',
+  `principal_amount` decimal(12,2) DEFAULT NULL,
   `due_day` int(11) NOT NULL COMMENT 'Day of the month payment is due (1-31)',
   `start_date` date NOT NULL,
   `end_date` date DEFAULT NULL,
@@ -28,8 +29,8 @@ CREATE TABLE `payment_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Sample Data (Optional, for testing)
-INSERT INTO `recurring_payments` (`payment_name`, `payment_type`, `amount`, `due_day`, `start_date`, `end_date`, `is_active`) VALUES
-('Home Loan EMI', 'EMI', 1250.00, 5, '2023-01-01', '2035-12-31', 1),
-('Phone Bill', 'Recharge', 60.00, 15, '2023-01-01', NULL, 1),
-('Car Insurance', 'Insurance', 85.50, 20, '2023-01-01', NULL, 1),
-('Apartment Rent', 'Rent', 800.00, 1, '2023-01-01', NULL, 1);
+INSERT INTO `recurring_payments` (`payment_name`, `payment_type`, `amount`, `principal_amount`, `due_day`, `start_date`, `end_date`, `is_active`) VALUES
+('Home Loan EMI', 'EMI', 1250.00, 150000.00, 5, '2023-01-01', '2035-12-31', 1),
+('Phone Bill', 'Recharge', 60.00, NULL, 15, '2023-01-01', NULL, 1),
+('Car Insurance', 'Insurance', 85.50, NULL, 20, '2023-01-01', NULL, 1),
+('Apartment Rent', 'Rent', 800.00, NULL, 1, '2023-01-01', NULL, 1);

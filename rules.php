@@ -130,27 +130,33 @@ require_once 'db_connect.php';
                             <div>
                                 <label for="payment_type" class="block text-sm font-medium text-gray-700">Payment Type</label>
                                 <select name="payment_type" id="payment_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
-                                    <option>Loan</option><option>EMI</option><option>Rent</option><option>Recharge</option><option>Insurance</option><option>Other</option>
+                                    <option>Other</option><option>Loan</option><option>EMI</option><option>Rent</option><option>Recharge</option><option>Insurance</option>
                                 </select>
                             </div>
-                            <div>
-                                <label for="amount" class="block text-sm font-medium text-gray-700">Amount ($)</label>
-                                <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="e.g., 15.99" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="due_day" class="block text-sm font-medium text-gray-700">Due Day (1-31)</label>
                                 <input type="number" name="due_day" id="due_day" min="1" max="31" placeholder="e.g., 15" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                             </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="amount" class="block text-sm font-medium text-gray-700">Monthly Amount (EMI)</label>
+                                <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="e.g., 2125.00" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                            </div>
+                            <div id="principal-amount-wrapper" class="hidden">
+                                <label for="principal_amount" class="block text-sm font-medium text-gray-700">Principal Amount</label>
+                                <input type="number" name="principal_amount" id="principal_amount" step="0.01" min="0.01" placeholder="e.g., 100000.00" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div>
                                 <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
                                 <input type="date" name="start_date" id="start_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                             </div>
-                        </div>
-                        <div>
-                            <label for="end_date" class="block text-sm font-medium text-gray-700">End Date <span class="text-gray-500">(Optional)</span></label>
-                            <input type="date" name="end_date" id="end_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <div>
+                                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date <span class="text-gray-500">(Optional)</span></label>
+                                <input type="date" name="end_date" id="end_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
                         </div>
                     </div>
                     <div class="mt-6 pt-4 border-t">
@@ -222,9 +228,13 @@ require_once 'db_connect.php';
             let content = '';
             rules.forEach(rule => {
                 const statusClass = rule.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                let nameHtml = rule.payment_name;
+                if ((rule.payment_type === 'Loan' || rule.payment_type === 'EMI') && rule.principal_amount) {
+                    nameHtml = `<a href="details.php?id=${rule.id}" class="text-indigo-600 hover:text-indigo-900 hover:underline" title="View Details">${rule.payment_name}</a>`;
+                }
                 content += `
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${rule.payment_name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${nameHtml}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${rule.payment_type}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(rule.amount)}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${rule.due_day}</td>
@@ -303,6 +313,20 @@ require_once 'db_connect.php';
         closeModalBtn.addEventListener('click', closeModal);
         modal.addEventListener('click', (event) => {
             if (event.target === modal) closeModal();
+        });
+
+        // Show/hide Principal Amount field based on payment type
+        document.getElementById('payment_type').addEventListener('change', function() {
+            const principalWrapper = document.getElementById('principal-amount-wrapper');
+            const principalInput = document.getElementById('principal_amount');
+            if (this.value === 'Loan' || this.value === 'EMI') {
+                principalWrapper.classList.remove('hidden');
+                principalInput.required = true;
+            } else {
+                principalWrapper.classList.add('hidden');
+                principalInput.required = false;
+                principalInput.value = ''; // Clear value when hidden
+            }
         });
 
         addPaymentForm.addEventListener('submit', async (event) => {
