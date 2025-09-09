@@ -38,11 +38,20 @@ require_once 'db_connect.php';
 
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
 
-        <header class="mb-8 flex flex-wrap justify-between items-center gap-4">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">My Payments Dashboard</h1>
-            <button id="add-payment-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">
-                + Add New Payment
-            </button>
+        <header class="mb-8">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">My Payments Dashboard</h1>
+                <button id="add-payment-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">
+                    + Add New Payment
+                </button>
+            </div>
+            <nav class="bg-white p-3 rounded-lg shadow-md">
+                <ul class="flex items-center gap-x-6 text-sm sm:text-base">
+                    <li><a href="index.php" class="text-indigo-600 font-bold border-b-2 border-indigo-600 pb-2">Dashboard</a></li>
+                    <li><a href="history.php" class="text-gray-500 hover:text-indigo-600 font-semibold">Payment History</a></li>
+                    <li><a href="rules.php" class="text-gray-500 hover:text-indigo-600 font-semibold">Manage Rules</a></li>
+                </ul>
+            </nav>
         </header>
 
         <main>
@@ -82,8 +91,12 @@ require_once 'db_connect.php';
         };
 
         const formatDate = (dateString) => {
+            if (!dateString) return '';
             const date = new Date(dateString + 'T00:00:00'); // Treat date as local
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
         };
 
         // --- Main Function to Fetch and Render Payments ---

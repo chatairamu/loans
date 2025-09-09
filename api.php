@@ -162,6 +162,137 @@ try {
             }
             break;
 
+        // --- ACTION: get_rules ---
+        case 'get_rules':
+            $page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, ['options' => ['default' => 1, 'min_range' => 1]]);
+            $items_per_page = 10;
+            $offset = ($page - 1) * $items_per_page;
+
+            $filter_type = $_GET['filter_type'] ?? 'all';
+            $filter_status = $_GET['filter_status'] ?? 'all';
+
+            // --- Build WHERE clause for filtering ---
+            $base_sql = "FROM recurring_payments";
+            $where_clauses = [];
+            $params = [];
+
+            if ($filter_type !== 'all') {
+                $where_clauses[] = "payment_type = ?";
+                $params[] = $filter_type;
+            }
+            if ($filter_status !== 'all') {
+                $where_clauses[] = "is_active = ?";
+                $params[] = $filter_status;
+            }
+
+            $where_sql = "";
+            if (!empty($where_clauses)) {
+                $where_sql = " WHERE " . implode(' AND ', $where_clauses);
+            }
+
+            // --- Get total count for pagination ---
+            $count_stmt = $pdo->prepare("SELECT COUNT(*) as total " . $base_sql . $where_sql);
+            $count_stmt->execute($params);
+            $total_items = $count_stmt->fetchColumn();
+            $total_pages = ceil($total_items / $items_per_page);
+
+            // --- Get data for the current page ---
+            $data_sql = "SELECT * " . $base_sql . $where_sql . " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+            $data_params = array_merge($params, [$items_per_page, $offset]);
+
+            $data_stmt = $pdo->prepare($data_sql);
+            // PDO can't bind two integers (LIMIT, OFFSET) directly with array_merge if there are other params.
+            // We need to bind them manually with correct types.
+            $i = 1;
+            foreach ($params as $param) {
+                $data_stmt->bindValue($i++, $param);
+            }
+            $data_stmt->bindValue($i++, $items_per_page, PDO::PARAM_INT);
+            $data_stmt->bindValue($i++, $offset, PDO::PARAM_INT);
+
+            $data_stmt->execute();
+            $rules = $data_stmt->fetchAll();
+
+            $response = [
+                'pagination' => [
+                    'total_items' => (int)$total_items,
+                    'total_pages' => (int)$total_pages,
+                    'current_page' => $page,
+                    'items_per_page' => $items_per_page
+                ],
+                'data' => $rules
+            ];
+            json_response('success', $response);
+            break;
+
+        // --- ACTION: get_history ---
+        case 'get_history':
+            $page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, ['options' => ['default' => 1, 'min_range' => 1]]);
+            $items_per_page = 15;
+            $offset = ($page - 1) * $items_per_page;
+
+            $filter_type = $_GET['filter_type'] ?? 'all';
+            $filter_status = $_GET['filter_status'] ?? 'all';
+            $filter_start_date = $_GET['filter_start_date'] ?? '';
+            $filter_end_date = $_GET['filter_end_date'] ?? '';
+
+            // --- Build WHERE clause for filtering ---
+            $base_sql = "FROM payment_log AS pl JOIN recurring_payments AS rp ON pl.payment_id = rp.id";
+            $where_clauses = [];
+            $params = [];
+
+            if ($filter_type !== 'all') {
+                $where_clauses[] = "rp.payment_type = ?";
+                $params[] = $filter_type;
+            }
+            if ($filter_status !== 'all') {
+                $where_clauses[] = "pl.status = ?";
+                $params[] = $filter_status;
+            }
+            if (!empty($filter_start_date)) {
+                $where_clauses[] = "pl.due_date >= ?";
+                $params[] = $filter_start_date;
+            }
+            if (!empty($filter_end_date)) {
+                $where_clauses[] = "pl.due_date <= ?";
+                $params[] = $filter_end_date;
+            }
+
+            $where_sql = !empty($where_clauses) ? " WHERE " . implode(' AND ', $where_clauses) : "";
+
+            // --- Get total count for pagination ---
+            $count_stmt = $pdo->prepare("SELECT COUNT(pl.id) " . $base_sql . $where_sql);
+            $count_stmt->execute($params);
+            $total_items = $count_stmt->fetchColumn();
+            $total_pages = ceil($total_items / $items_per_page);
+
+            // --- Get data for the current page ---
+            $select_cols = "pl.id as log_id, pl.due_date, pl.status, pl.paid_on, rp.payment_name, rp.payment_type, rp.amount";
+            $data_sql = "SELECT " . $select_cols . " " . $base_sql . $where_sql . " ORDER BY pl.due_date DESC LIMIT ? OFFSET ?";
+
+            $data_stmt = $pdo->prepare($data_sql);
+            $i = 1;
+            foreach ($params as $param) {
+                $data_stmt->bindValue($i++, $param);
+            }
+            $data_stmt->bindValue($i++, $items_per_page, PDO::PARAM_INT);
+            $data_stmt->bindValue($i++, $offset, PDO::PARAM_INT);
+
+            $data_stmt->execute();
+            $history = $data_stmt->fetchAll();
+
+            $response = [
+                'pagination' => [
+                    'total_items' => (int)$total_items,
+                    'total_pages' => (int)$total_pages,
+                    'current_page' => $page,
+                    'items_per_page' => $items_per_page
+                ],
+                'data' => $history
+            ];
+            json_response('success', $response);
+            break;
+
         // --- Default case for unknown actions ---
         default:
             json_response('error', null, 'Unknown action specified.', 400);
