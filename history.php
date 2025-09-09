@@ -177,7 +177,7 @@ require_once 'db_connect.php';
         let currentPage = 1;
 
         // --- Helper Functions ---
-        const formatCurrency = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
         const formatDate = (dateString) => {
             if (!dateString) return 'N/A';
             const date = new Date(dateString.includes(' ') ? dateString.replace(' ', 'T') : dateString + 'T00:00:00');
